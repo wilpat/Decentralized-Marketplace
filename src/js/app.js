@@ -61,17 +61,32 @@ App = {
         return instance.getItem()
       }).then(item =>{
         // console.log(item)
-        if(item[0] == 0x0){
+        if(item[0] == 0X0){
           //I.e the address is null meaning no item
           return;
         }
         //Retrieve the item template and fill it
         var itemTemplate = $('#itemTemplate');
-        itemTemplate.find('.panel-title').text(item[1]);
-        itemTemplate.find('.item-description').text(item[2]);
-        itemTemplate.find('.item-price').text(web3.fromWei(item[3], 'ether'));
+        itemTemplate.find('.panel-title').text(item[2]);
+        itemTemplate.find('.item-description').text(item[3]);
+        itemTemplate.find('.item-price').text(web3.fromWei(item[4], 'ether'));
+        itemTemplate.find('.btn-buy').attr('data-value', web3.fromWei(item[4], 'ether'));
+
+        var buyer = item[1];
+        if(buyer == App.account){
+          buyer = 'You';
+        }else if(buyer == 0X0){
+          buyer = 'No one yet';
+        }
+
+        itemTemplate.find('.item-buyer').text(buyer);
 
         var seller = item[0];
+        if(seller == App.account || item[1] != 0X0){//If item seller is the same as current user or item already has a buyer meaning it's been sold
+          itemTemplate.find('.btn-buy').hide();
+        }else{
+          itemTemplate.find('.btn-buy').show();
+        }
         if(seller == App.account){
           seller = 'You';
         }
@@ -103,7 +118,7 @@ App = {
       });
     },
 
-    
+
     listenForEvents: () => {
 
     App.contracts.ProductList.deployed().then(instance => {
@@ -119,8 +134,32 @@ App = {
         }
         
       });
+
+      instance.itemBought({}, {}).watch((error, event) =>{
+        if(!error){
+          $('#events').append(`<li class ='list-group'>${event.args._buyer} bought ${event.args._name}`)
+          App.reloadItems();//Rerender the app
+        }else{
+          console.error(error)
+        }
+        
+      });
+
     });
 
+  },
+  buyItem: () =>{
+    event.preventDefault();
+    var _price = $(event.target).data('value');//The value of the btn clicked as we set it above
+    App.contracts.ProductList.deployed().then(instance => {
+      instance.buyItem({
+        from:App.account,
+        value: web3.toWei(_price, 'ether'),
+        gas: 500000
+      })
+    }).catch(error=>{
+      console.error(error)
+    });
   }
 };
 
