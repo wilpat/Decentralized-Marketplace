@@ -1,15 +1,15 @@
 # Decentralized-Marketplace
 An application for buying and selling stuff on the ethereum blockchain network.
 
-Live version ['here'](https://wilpat.github.io/Decentralized-Marketplace/)
+Live version [here](https://wilpat.github.io/Decentralized-Marketplace/)
 
 ## Installation
 Clone this repo then run `npm install` to get all the dependencies in place
 
-Download, install and launch ['Ganache'](https://truffleframework.com/ganache) -  a personal blockchain 
+Download, install and launch [Ganache](https://truffleframework.com/ganache) -  a personal blockchain 
 for Ethereum development you can use to deploy contracts, develop applications, and run tests.
 
-Download and install ['Metamask'](https://metamask.io/) - An extension that allows you access the ethereum network
+Download and install [Metamask](https://metamask.io/) - An extension that allows you access the ethereum network
 from your browser
 
 Sign into Metamask using either the Mnemonics on the dashboard or the private key of a particular ethereum address
