@@ -2,52 +2,81 @@ pragma solidity ^0.5.0;
 
 contract ProductList{
 
-	address payable seller;
-	address buyer;
-	string name;
-	string description;
-	uint256 price;
+	struct Item {
 
-	event itemSold(address indexed _seller, string _name, uint256 _price);
-	event itemBought(address indexed _buyer, address indexed _seller, string _name, uint256 _price);
+		uint id;
+		address payable seller;
+		address buyer;
+		string name;
+		string description;
+		uint256 price;
+
+	}
+	
+	mapping (uint => Item) public items;
+	uint itemCounter= 0;
+
+	event itemSold(uint indexed _id, address indexed _seller, string _name, uint256 _price);
+	event itemBought(uint indexed _id, address indexed _buyer, address indexed _seller, string _name, uint256 _price);
 	// constructor() public{
 	// 	sellItem('default item', 'description for default item', 1000000000000	000000);
 	// }
 
 	function sellItem (string memory _name, string memory _description, uint256 _price) public {
-		seller = msg.sender;
-		name = _name;
-		description = _description;
-		price = _price;
-		emit itemSold(seller, _name, _price);
+		itemCounter++;
+		items[itemCounter] = Item(itemCounter, msg.sender, address(0), _name, _description, _price);
+		emit itemSold( itemCounter, msg.sender, _name, _price );
 	}
 	
-	function getItem () public view returns(
-		address _seller,
-		address _buyer,
-		string memory _name,
-		string memory _description,
-		uint256 _price
-	){
-		return (seller, buyer, name, description, price);
+	function getNumberOfItems () public view returns(uint)  {
+		return itemCounter;
+	}
+
+	function getItemsForSale () public view returns(uint[] memory) {
+		uint[] memory itemIds = new uint[](itemCounter);//Create an array with max no of elt set as itemCoubter
+		//memory because the default which is Storage is more expensive
+		uint numberOfItemsForSale = 0;
+		//Iterate over the articles
+		for(uint i = 1; i <= itemCounter; i++){
+			//We keep the the id if it has no buyer
+			if(items[i].buyer == address(0)){
+				itemIds[numberOfItemsForSale] = items[i].id;
+				numberOfItemsForSale++;
+			}
+		}
+
+		//Return a smaller array containing only the items for sale
+		uint[] memory forSale = new uint[](numberOfItemsForSale);
+		for(uint j = 0; j <	numberOfItemsForSale; j++){
+			forSale[j] = itemIds[j];
+		}
+		return forSale;
 	}
 	
-	function buyItem () public payable {//payable meaning this fxn may receive ether from it's caller
+	
+	function buyItem (uint _id) public payable {//payable meaning this fxn may receive ether from it's caller
 		
-		require (seller != address(0x0));//This item has a seller
+
+		require (itemCounter > 0);//Check that an item exists for sale
+
+		require (_id > 0 && _id <= itemCounter);//check that requested item exists
 		
-		require (buyer == address(0x0));////This itemm hasnt been sold
+		Item storage item = items[_id];//This is how you get an element of a mapping
 
-		require (msg.sender != seller); // The buyer isnt the seller
+		require (item.seller != address(0));//This item has a seller
+		
+		require (item.buyer == address(0));////This itemm hasnt been sold
 
-		require (msg.value == price); //Amount sent is the price of this item
+		require (msg.sender != item.seller); // The buyer isnt the seller
 
-		buyer = msg.sender;//Store the buyer
+		require (msg.value == item.price); //Amount sent is the price of this item
 
-		seller.transfer(msg.value);//transfer funds
+		item.buyer = msg.sender;//Store the buyer
+
+		item.seller.transfer(msg.value);//transfer funds
 
 		//trigger event
-		emit itemBought(buyer, seller, name, price);
+		emit itemBought(_id, item.buyer, item.seller, item.name, item.price);
 	}
 	
 	

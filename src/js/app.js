@@ -1,6 +1,8 @@
 App = {
      web3Provider: null,
      contracts: {},
+     loading: false,
+     mounted: false,
 
      init: () => {
           return App.initWeb3();
@@ -49,52 +51,60 @@ App = {
           App.listenForEvents();
 
           return App.reloadItems()
+        }).then(res =>{
+          App.mounted = true;
         })
      },
 
+
      reloadItems: ()=>{
+      //Prevent re-entry
+      if(App.loading){
+        return;
+      }
+      App.loading = true;
+      var instance;
       //Refetch the account info cos bal might have changed
       App.displayAccountInfo();
       // retrieve the items placeholder and clear it
       $('#itemsRow').empty();
-      App.contracts.ProductList.deployed().then(instance =>{
-        return instance.getItem()
-      }).then(item =>{
-        // console.log(item)
-        if(item[0] == 0X0){
-          //I.e the address is null meaning no item
-          return;
+      App.contracts.ProductList.deployed().then(i =>{
+        instance = i;
+        return instance.getItemsForSale();//Returns an array of the ids of items for sale
+      }).then(itemIds =>{
+        // console.log(itemIds)
+        for (var i = itemIds.length - 1; i >= 0; i--) {//Iterate and render the items in descending order
+          var itemId = itemIds[i];
+          instance.items(itemId.toNumber()).then(item => {
+            App.displayItems(item[0], item[1], item[3], item[4], item[5]);
+          })
         }
+        App.loading = false;
+        
+      }).catch(error =>{
+        console.error(error);
+        App.loading = false;
+      })
+     },
+
+     displayItems: (id, seller, name, description, price) =>{
         //Retrieve the item template and fill it
         var itemTemplate = $('#itemTemplate');
-        itemTemplate.find('.panel-title').text(item[2]);
-        itemTemplate.find('.item-description').text(item[3]);
-        itemTemplate.find('.item-price').text(web3.fromWei(item[4], 'ether'));
-        itemTemplate.find('.btn-buy').attr('data-value', web3.fromWei(item[4], 'ether'));
+        itemTemplate.find('.panel-title').text(name);
+        itemTemplate.find('.item-description').text(description);
+        itemTemplate.find('.item-price').text(web3.fromWei(price, 'ether') + " ETH");
+        itemTemplate.find('.btn-buy').attr('data-id', id);
+        itemTemplate.find('.btn-buy').attr('data-value', web3.fromWei(price, 'ether'));
 
-        var buyer = item[1];
-        if(buyer == App.account){
-          buyer = 'You';
-        }else if(buyer == 0X0){
-          buyer = 'No one yet';
-        }
-
-        itemTemplate.find('.item-buyer').text(buyer);
-
-        var seller = item[0];
-        if(seller == App.account || item[1] != 0X0){//If item seller is the same as current user or item already has a buyer meaning it's been sold
+        if(seller == App.account){//If item seller is the same as current user
+          seller = 'You';
           itemTemplate.find('.btn-buy').hide();
         }else{
           itemTemplate.find('.btn-buy').show();
         }
-        if(seller == App.account){
-          seller = 'You';
-        }
         itemTemplate.find('.item-seller').text(seller);
-
         //add this item to the row
         $('#itemsRow').append(itemTemplate.html());
-      })
      },
 
      sellItem: () =>{
@@ -127,10 +137,12 @@ App = {
       //github.com/MetaMask/metamask-extension/issues/2393
       instance.itemSold({}, {}).watch((error, event) =>{
         if(!error){
-          $('#events').append(`<li class ='list-group'>${event.args._name} is now for sale`)
-          App.reloadItems();//Rerender the app
+          $('#events').append(`<li class ='list-group'>${event.args._name} is now for sale`);
+          if(App.mounted){
+            App.reloadItems();//Rerender the app only after the first loading is complete 
+          }
         }else{
-          console.error(errpr)
+          console.error(error)
         }
         
       });
@@ -150,9 +162,10 @@ App = {
   },
   buyItem: () =>{
     event.preventDefault();
+    var _id = $(event.target).data('id');//The value of the btn clicked as we set it above
     var _price = $(event.target).data('value');//The value of the btn clicked as we set it above
     App.contracts.ProductList.deployed().then(instance => {
-      instance.buyItem({
+      instance.buyItem(_id, {
         from:App.account,
         value: web3.toWei(_price, 'ether'),
         gas: 500000
