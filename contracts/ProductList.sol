@@ -1,6 +1,10 @@
 pragma solidity ^0.5.0;
 
-contract ProductList{
+
+import "./Owner.sol";
+
+
+contract ProductList is Owner{
 
 	struct Item {
 
@@ -13,6 +17,7 @@ contract ProductList{
 
 	}
 	
+	//State variables
 	mapping (uint => Item) public items;
 	uint itemCounter= 0;
 
@@ -78,6 +83,10 @@ contract ProductList{
 		//trigger event
 		emit itemBought(_id, item.buyer, item.seller, item.name, item.price);
 	}
+
+	function kill() public onlyOwner {//Only the owner of this contract can do this
+        selfdestruct(owner);
+    }
 	
 	
 }
