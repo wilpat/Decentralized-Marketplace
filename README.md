@@ -1,6 +1,8 @@
 # Decentralized-Marketplace
 An application for buying and selling stuff on the ethereum blockchain network.
 
+Live version ['here'](https://wilpat.github.io/Decentralized-Marketplace/)
+
 ## Installation
 Clone this repo then run `npm install` to get all the dependencies in place
 
