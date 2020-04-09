@@ -15,7 +15,7 @@ App = {
           App.web3Provider = web3.currentProvider
         }else{
           //Create a new provider and plug it into our local node
-          App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
+          App.web3Provider = new Web3.providers.HttpProvider('http://localhost:8545');
         }
         web3 = new Web3(App.web3Provider);
 
@@ -122,7 +122,7 @@ App = {
           gas: 500000
           });
       }).then(result =>{
-        // App.reloadItems();
+        App.reloadItems();
       }).catch(err =>{
         console.error(err);
       });
@@ -138,7 +138,7 @@ App = {
       instance.itemSold({}, {}).watch((error, event) =>{
         if(!error){
           $('#events').append(`<li class ='list-group'>${event.args._name} is now for sale`);
-          if(App.mounted){
+          if(!App.mounted){
             App.reloadItems();//Rerender the app only after the first loading is complete 
           }
         }else{
