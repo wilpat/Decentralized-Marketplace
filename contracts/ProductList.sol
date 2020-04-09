@@ -1,5 +1,4 @@
-pragma solidity ^0.5.0;
-
+pragma solidity >=0.5.0;
 
 import "./Owner.sol";
 
@@ -16,7 +15,7 @@ contract ProductList is Owner{
 		uint256 price;
 
 	}
-	
+
 	//State variables
 	mapping (uint => Item) public items;
 	uint itemCounter= 0;
@@ -30,9 +29,9 @@ contract ProductList is Owner{
 	function sellItem (string memory _name, string memory _description, uint256 _price) public {
 		itemCounter++;
 		items[itemCounter] = Item(itemCounter, msg.sender, address(0), _name, _description, _price);
-		emit itemSold( itemCounter, msg.sender, _name, _price );
+		emit itemSold(itemCounter, msg.sender, _name, _price);
 	}
-	
+
 	function getNumberOfItems () public view returns(uint)  {
 		return itemCounter;
 	}
@@ -57,24 +56,23 @@ contract ProductList is Owner{
 		}
 		return forSale;
 	}
-	
-	
+
+
 	function buyItem (uint _id) public payable {//payable meaning this fxn may receive ether from it's caller
-		
 
-		require (itemCounter > 0);//Check that an item exists for sale
+		require (itemCounter > 0, "There are currently no items for sale.");//Check that an item exists for sale
 
-		require (_id > 0 && _id <= itemCounter);//check that requested item exists
-		
+		require (_id > 0 && _id <= itemCounter, "No item is associated to the id provided.");//check that requested item exists
+
 		Item storage item = items[_id];//This is how you get an element of a mapping
 
-		require (item.seller != address(0));//This item has a seller
-		
-		require (item.buyer == address(0));////This itemm hasnt been sold
+		require (item.seller != address(0), "This item does not have a seller.");//This item has a seller
 
-		require (msg.sender != item.seller); // The buyer isnt the seller
+		require (item.buyer == address(0), "This item has already been bought.");////This itemm hasnt been sold
 
-		require (msg.value == item.price); //Amount sent is the price of this item
+		require (msg.sender != item.seller, "Item cannot be bought by it's seller."); // The buyer isnt the seller
+
+		require (msg.value == item.price, "Supplied price does not match item price."); //Amount sent is the price of this item
 
 		item.buyer = msg.sender;//Store the buyer
 
@@ -87,6 +85,5 @@ contract ProductList is Owner{
 	function kill() public onlyOwner {//Only the owner of this contract can do this
         selfdestruct(owner);
     }
-	
-	
+
 }
